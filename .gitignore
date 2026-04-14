@@ -1,6 +1,7 @@
 # activity outputs
 activity/submissions
 activity/train_output
+activity/pretrain_output
 
 # structure outputs
 structure/boltz_outputs*

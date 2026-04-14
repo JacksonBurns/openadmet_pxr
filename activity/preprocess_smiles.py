@@ -66,8 +66,9 @@ def resonate(smiles):
     return [s.to_smiles() for s in structs]
 
 if __name__ == "__main__":
-    from tqdm import tqdm
+    from pathlib import Path
 
+    from tqdm import tqdm
 
     train_df = pd.read_csv("train.csv")
     train_df["SMILES"] = train_df["SMILES"].astype(object)  # allows writing lists of SMILES here
@@ -85,5 +86,14 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Skipping resonance generation for smiles {og_smiles}")
             print(e)
-    train_df = train_df.explode("SMILES")
-    train_df.to_csv("train_augmented.csv", index=False)
+
+    outdir = Path("splits")
+    for i in range(3):
+        i_val_df = train_df.sample(frac=0.2, random_state=i)
+        i_train_df = train_df[~train_df.index.isin(i_val_df.index)]
+        i_val_df["SMILES"] = i_val_df["SMILES"].apply(lambda smiles_list: smiles_list[0])
+        i_val_df.to_csv(outdir / f"split_{i}_val.csv", index=False)
+        i_train_df = i_train_df.explode("SMILES")
+        i_train_df.to_csv(outdir / f"split_{i}_train.csv", index=False)
+
+    

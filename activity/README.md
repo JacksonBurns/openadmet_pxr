@@ -15,6 +15,8 @@ Direct training on the pec50 task (multitask as well)
 
 C. Physciochemical Random Forest
 
+molpipeline 0.13.0 or newer
+
 From the CheMeleon paper, on pEC50 only since multitask doesn't help here
 
 later considerations - can add uncertainty to the loss function with the known uncertainty values, possibly

@@ -138,7 +138,7 @@ def main():
     os.makedirs(OUTDIR, exist_ok=True)
     target_seq = read_fasta_sequence(FASTA_PATH)
 
-    all_constraints = set()
+    pocket_sets = []
 
     for pdb_file in Path(TEMPLATE_DIR).glob("*"):
         name = pdb_file.stem
@@ -164,18 +164,50 @@ def main():
         pocket_res = parse_p2rank_residues(p2rank_out)
 
         # Step 6: map to FASTA indices
-        mapped = [mapping[r] for r in pocket_res if r in mapping]
+        mapped = set([mapping[r] for r in pocket_res if r in mapping])
 
         print(f"{name}: {len(mapped)} mapped pocket residues")
+        
+        if mapped:
+            pocket_sets.append(mapped)
 
-        # all_constraints.update(mapped)  # <-- keep all
-        all_constraints.intersection_update(mapped)  # <-- keep only overlapping
+    # Step 7: Intersect all sets to find the conserved core pocket
+    if pocket_sets:
+        core_constraints = set.intersection(*pocket_sets)
+    else:
+        core_constraints = set()
+        print("WARNING: No pockets found in any templates.")
 
-    # Step 7: build YAML constraint
-    sorted_res = sorted(all_constraints)
+    print(f"\nConserved core residues (all types): {len(core_constraints)}")
 
-    yaml_contacts = "[[" + "], [".join([f"'A', {r}" for r in sorted_res]) + "]]"
+    # Step 7b: Filter the core for polar Hydrogen-Bonding Anchors
+    # Specifically targeting the canonical PXR polar anchors (S, Q, H, R) 
+    # plus other standard H-bond donors/acceptors just in case (T, Y, N, D, E, K)
+    polar_amino_acids = {'S', 'Q', 'H', 'R', 'T', 'Y', 'N', 'D', 'E', 'K'}
+    
+    anchor_residues = []
+    print("\n--- Identifying Polar Anchors ---")
+    for r in sorted(list(core_constraints)):
+        # Convert 1-based FASTA index to 0-based string index
+        aa = target_seq[r - 1] 
+        if aa in polar_amino_acids:
+            anchor_residues.append(r)
+            print(f"Found polar anchor: {aa}{r}")
 
+    # If the filter is too strict and finds nothing, fall back to the full core
+    if not anchor_residues:
+        print("WARNING: No polar residues found in the core. Falling back to all core residues.")
+        anchor_residues = list(core_constraints)
+
+    # Step 8: Build YAML constraint using ONLY the top 2-3 anchors
+    # We slice [:3] to ensure we don't over-constrain the fragment
+    final_targets = sorted(anchor_residues)[:3]
+
+    if not final_targets:
+        print("ERROR: No residues available for constraints.")
+        return
+
+    yaml_contacts = "[[" + "], [".join([f"'A', {r}" for r in final_targets]) + "]]"
     print("\n=== FINAL CONSTRAINT BLOCK ===\n")
     print(f"""constraints:
   - pocket:

@@ -4,6 +4,7 @@ activity/train_output
 activity/pretrain_output
 
 # structure outputs
+structure/submissions
 structure/boltz_outputs*
 structure/*.zip
 structure/p2rank_2.5.1
@@ -13,6 +14,9 @@ structure/raw_templates/*
 !structure/processed_templates/pdb7axe_chainA.pdb
 !structure/processed_templates/pdb8r00_chainA.pdb
 !structure/processed_templates/pdb9fzj_chainA.pdb
+!structure/processed_templates/pdb1ilg_chainA.pdb
+!structure/processed_templates/pdb4ny9_chainA.pdb
+!structure/processed_templates/pdb4xhd_chainA.pdb
 
 *.csv
 

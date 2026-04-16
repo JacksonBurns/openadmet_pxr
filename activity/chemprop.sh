@@ -1,12 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+mkdir -p train_output
+mkdir train_output/chemprop_pretrain
+mkdir train_output/chemprop
+
 chemprop train \
     --output-dir train_output/chemprop_pretrain \
-    --logfile pretrain_output/chemprop_pretrain/log.txt \
+    --logfile train_output/chemprop_pretrain/log.txt \
     --data-path pretrain.csv \
     --split-sizes 0.8 0.1 0.1 \
     --descriptors-columns concentration_M \
     --pytorch-seed 42 \
     --smiles-columns SMILES \
-    --target-columns log2_fc_estimate log2_fc_stderr \
+    --target-columns log2_fc_estimate \
     --task-type regression \
     --patience 5 \
     --init-lr 0.0001 \
@@ -31,7 +39,7 @@ for i in {0..2}; do
         --from-foundation train_output/chemprop_pretrain/model_0/best.pt \
         --pytorch-seed 42 \
         --smiles-columns SMILES \
-        --target-columns "pEC50" "Emax_estimate (log2FC vs. baseline)" "pEC50_counter" "Emax_estimate (log2FC vs. baseline)_counter" \
+        --target-columns pEC50 \
         --task-weights 10 1 1 1 \
         --task-type regression \
         --patience 5 \

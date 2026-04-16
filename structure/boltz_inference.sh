@@ -49,6 +49,9 @@ sequences:
         - pdb: "$(realpath ./processed_templates/pdb9fzj_chainA.pdb)"
         - pdb: "$(realpath ./processed_templates/pdb8r00_chainA.pdb)"
         - pdb: "$(realpath ./processed_templates/pdb9fzj_chainA.pdb)"
+        - pdb: "$(realpath ./processed_templates/pdb7axe_chainA.pdb)"
+        - pdb: "$(realpath ./processed_templates/pdb4ny9_chainA.pdb)"
+        - pdb: "$(realpath ./processed_templates/pdb4xhd_chainA.pdb)"
   - ligand:
       id: B
       smiles: '$CLEAN_SMILES'
@@ -56,9 +59,9 @@ sequences:
 constraints:
   - pocket:
       binder: B
-      contacts: [['A', 64], ['A', 65], ['A', 67], ['A', 68], ['A', 69], ['A', 70], ['A', 86], ['A', 95], ['A', 97], ['A', 98], ['A', 99], ['A', 102], ['A', 103], ['A', 105], ['A', 106], ['A', 110], ['A', 140], ['A', 143], ['A', 144], ['A', 147], ['A', 158], ['A', 165], ['A', 180], ['A', 182], ['A', 183], ['A', 186], ['A', 262], ['A', 266], ['A', 267], ['A', 269], ['A', 270], ['A', 273], ['A', 279], ['A', 284], ['A', 288]]
+      contacts: [['A', 106], ['A', 144], ['A', 266]]
       max_distance: 6.0
-      force: false
+      force: true
 EOF
 
     # C. Run Boltz Prediction
@@ -66,8 +69,10 @@ EOF
     boltz predict "$INPUT_YAML" \
         --out_dir "$COMPLEX_OUTDIR" \
         --output_format pdb \
-        --method "x-ray diffraction"
-        # --use_potentials
+        --method "x-ray diffraction" \
+        --diffusion_samples 10 \
+        --max_parallel_samples 10 \
+        --use_potentials
 
     end_time=$(date +%s)
     duration=$((end_time - start_time))

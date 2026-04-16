@@ -1,3 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+mkdir -p train_output
+mkdir train_output/chemeleon
+
 for i in {0..2}; do
     chemprop train \
         --output-dir train_output/chemeleon/split_${i} \
@@ -9,7 +16,7 @@ for i in {0..2}; do
         --from-foundation CheMeleon \
         --pytorch-seed 42 \
         --smiles-columns SMILES \
-        --target-columns "pEC50" "Emax_estimate (log2FC vs. baseline)" "pEC50_counter" "Emax_estimate (log2FC vs. baseline)_counter" \
+        --target-columns pEC50 \
         --task-weights 10 1 1 1 \
         --task-type regression \
         --patience 3 \

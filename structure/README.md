@@ -10,10 +10,12 @@ pip uninstall nvidia-cuda-nvrtc
 conda install -c nvidia cuda-nvrtc
 ```
 
-Currently unused:
+I found this structure that is similar to the input FASTA:
 
-I initially wrote up some code to try and get the protein pocket as a constraint for Boltz, I might go back to this in the future:
+https://www.uniprot.org/uniprotkb/O75469/entry
 
-`pip install git+https://github.com/apple/ml-simplefold.git`
+using this FASTA similarity search tool:
 
-`python find_pxr_pocket.py`
+https://www.ebi.ac.uk/jdispatcher/sss
+
+With `biopython` installed run `prepare_templates_and_constraints.py` (to reproduce from scratch, I may just include these in the repo to avoid this).

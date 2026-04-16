@@ -12,14 +12,8 @@ SMILES_CSV="pxr-challenge_structure_TEST_BLINDED.csv"
 OUTDIR_BASE="boltz_outputs"
 MSA_PATH="$(realpath mmseqs2_pxr.a3m)"  # Use absolute path for the MSA
 
-# Pocket residues from your previous analysis
-# POCKET_RESIDUES="101,102,104,105,109,139,143,146,157,164,181,185,265,268,269,272,278,283,287,63,64,67,68,69,97,98"
-
 mkdir -p "$OUTDIR_BASE"
 
-# Convert comma-separated residues into YAML list format: [['A', 101], ['A', 102], ...]
-# This assumes Chain A is the protein
-# YAML_CONTACTS=$(echo "$POCKET_RESIDUES" | sed "s/,/], ['A', /g; s/^/[['A', /; s/$/]]/")
 
 # Extract the protein sequence
 PROTEIN_SEQ=$(grep -v "^>" "$FASTA_PATH" | tr -d '\n' | tr -d '\r')
@@ -51,25 +45,29 @@ sequences:
       id: A
       sequence: $PROTEIN_SEQ
       msa: "$MSA_PATH"
+      templates:
+        - pdb: "$(realpath ./processed_templates/pdb9fzj_chainA.pdb)"
+        - pdb: "$(realpath ./processed_templates/pdb8r00_chainA.pdb)"
+        - pdb: "$(realpath ./processed_templates/pdb9fzj_chainA.pdb)"
   - ligand:
       id: B
       smiles: '$CLEAN_SMILES'
+# from prepare_templates_and_constraints.py
+constraints:
+  - pocket:
+      binder: B
+      contacts: [['A', 64], ['A', 65], ['A', 67], ['A', 68], ['A', 69], ['A', 70], ['A', 86], ['A', 95], ['A', 97], ['A', 98], ['A', 99], ['A', 102], ['A', 103], ['A', 105], ['A', 106], ['A', 110], ['A', 140], ['A', 143], ['A', 144], ['A', 147], ['A', 158], ['A', 165], ['A', 180], ['A', 182], ['A', 183], ['A', 186], ['A', 262], ['A', 266], ['A', 267], ['A', 269], ['A', 270], ['A', 273], ['A', 279], ['A', 284], ['A', 288]]
+      max_distance: 6.0
+      force: false
 EOF
-# constraints:
-#   - pocket:
-#       binder: B
-#       contacts: $YAML_CONTACTS
-#       max_distance: 6.0
-#       force: false  # Set to true if you want to enforce the constraint more strongly
 
     # C. Run Boltz Prediction
-    # We remove --use_msa_server because the YAML now points to a local file.
-    # We add --use_potentials to enable the physics-based refinement for the pocket constraint.
+    # We can add --use_potentials to enable the physics-based refinement for the pocket constraint.
     boltz predict "$INPUT_YAML" \
         --out_dir "$COMPLEX_OUTDIR" \
         --output_format pdb \
         --method "x-ray diffraction"
-        # --use_potentials \
+        # --use_potentials
 
     end_time=$(date +%s)
     duration=$((end_time - start_time))

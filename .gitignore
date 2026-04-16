@@ -8,6 +8,11 @@ structure/boltz_outputs*
 structure/*.zip
 structure/p2rank_2.5.1
 structure/pxr_pocket_prediction
+structure/processed_templates/*
+structure/raw_templates/*
+!structure/processed_templates/pdb7axe_chainA.pdb
+!structure/processed_templates/pdb8r00_chainA.pdb
+!structure/processed_templates/pdb9fzj_chainA.pdb
 
 *.csv
 

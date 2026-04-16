@@ -1,25 +1,31 @@
-todo:
- - make a chemical space projection that follows the below trajectory
- - check distribution of pEC50 for PXR for compounds inside the counter screen and those not to validate if step 2 is a good idea (and do the above)
- - we have uncertainty bounds - incorporate into loss function?
+This is the model currently implemented in this repo:
 
-current plan:
+Ensemble of the below models:
 
-ensemble of the below models:
-A. Chemprop
+A. [Chemprop](https://doi.org/10.1021/acs.jcim.5c02332) (`chemprop.sh`)
+
+Requires: `chemprop>=2.2.2`
+
 1. pre-train chemprop on the primary screen with concentration as an input descriptor target is log2_fc_estimate
-2. fine tune (2) on compounds put through pxr and counter (multitask)
+2. fine tune (2) on compounds put through primary assay
 
-B. CheMeleon
-Direct training on the pec50 task (multitask as well)
+B. [CheMeleon](https://doi.org/10.48550/arXiv.2506.15792) (`chemeleon.sh`)
 
-C. Physciochemical Random Forest
+Requires: `chemprop>=2.2.2`
 
-molpipeline 0.13.0 or newer
+Direct training on the pec50 task
 
-From the CheMeleon paper, on pEC50 only since multitask doesn't help here
+C. Physicochemical Random Forest (`random_forest.py`)
 
-later considerations - can add uncertainty to the loss function with the known uncertainty values, possibly
+Requires: `molpipeline>=0.13.0`
 
-note for pretrained model:
-Avoid data leaks by dropping members from earlier datasets that appear in later datasets.
+From [`molpipeline`](https://doi.org/10.1021/acs.jcim.4c00863)'s `predefined_baselines`, on pEC50 only since multitask doesn't help in this architecture.
+
+
+I use data augmentation inspired by the [RIGR paper](https://doi.org/10.1021/acs.jcim.5c00495) to teach the models to be resonance-invariant - see `preprocess_smiles.py`.
+You will need a working installation of [RMG-Py](https://reactionmechanismgenerator.github.io/RMG-Py/users/rmg/installation/index.html) to run this script.
+
+
+Later considerations:
+
+ - can add uncertainty to the loss function with the known uncertainty values, possibly

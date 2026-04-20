@@ -9,6 +9,7 @@
 # https://github.com/akshatzalte/rigr/blob/e315d8ab412473afcd3a07f24c8839e9b4b93a99/notebooks/resonance_generation_and_augmentation.ipynb
 
 import pandas as pd
+from astartes.molecules import train_test_split_molecules
 from rdkit import Chem
 from rdkit.Chem.SaltRemover import SaltRemover
 
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     from tqdm import tqdm
 
     train_df = pd.read_csv("train.csv")
-    train_df["SMILES"] = train_df["SMILES"].astype(object)  # allows writing lists of SMILES here
+    train_df["SMILES"] = train_df["SMILES"].astype(object)
     for i in tqdm(range(train_df.shape[0]), desc="Preprocessing SMILES"):
         og_smiles = train_df.iloc[i]['SMILES']
         try:
@@ -88,9 +89,10 @@ if __name__ == "__main__":
             print(e)
 
     outdir = Path("splits")
-    for i in range(3):
-        i_val_df = train_df.sample(frac=0.2, random_state=i)
-        i_train_df = train_df[~train_df.index.isin(i_val_df.index)]
+    for i in range(4):
+        *_, train_idxs, val_idxs = train_test_split_molecules([s if isinstance(s, str) else s[0] for s in train_df["SMILES"].to_list()], train_size=0.80, test_size=0.20, sampler="kmeans", random_state=i + 42)
+        i_train_df = train_df.iloc[train_idxs].reset_index(drop=True)
+        i_val_df = train_df.iloc[val_idxs].reset_index(drop=True)
         i_val_df["SMILES"] = i_val_df["SMILES"].apply(lambda smiles_list: smiles_list[0])
         i_val_df.to_csv(outdir / f"split_{i}_val.csv", index=False)
         i_train_df = i_train_df.explode("SMILES")

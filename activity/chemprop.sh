@@ -28,7 +28,7 @@ chemprop train \
     --batch-size 32 \
     --epochs 50
 
-for i in {0..2}; do
+for i in {0..3}; do
     chemprop train \
         --output-dir train_output/chemprop/split_${i} \
         --logfile train_output/chemprop/split_${i}/log.txt \
@@ -40,6 +40,7 @@ for i in {0..2}; do
         --pytorch-seed 42 \
         --smiles-columns SMILES \
         --target-columns pEC50 \
+        --weight-column pEC50_weight \
         --task-weights 10 1 1 1 \
         --task-type regression \
         --patience 5 \

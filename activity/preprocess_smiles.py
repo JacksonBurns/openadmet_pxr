@@ -90,12 +90,10 @@ if __name__ == "__main__":
 
     outdir = Path("splits")
     for i in range(4):
-        *_, train_idxs, val_idxs = train_test_split_molecules([s if isinstance(s, str) else s[0] for s in train_df["SMILES"].to_list()], train_size=0.80, test_size=0.20, sampler="kmeans", random_state=i + 42)
+        *_, train_idxs, val_idxs = train_test_split_molecules([s if isinstance(s, str) else s[0] for s in train_df["SMILES"].to_list()], train_size=0.80, test_size=0.20, sampler="kmeans", random_state=i + 42, return_indices=True)
         i_train_df = train_df.iloc[train_idxs].reset_index(drop=True)
         i_val_df = train_df.iloc[val_idxs].reset_index(drop=True)
         i_val_df["SMILES"] = i_val_df["SMILES"].apply(lambda smiles_list: smiles_list[0])
         i_val_df.to_csv(outdir / f"split_{i}_val.csv", index=False)
         i_train_df = i_train_df.explode("SMILES")
         i_train_df.to_csv(outdir / f"split_{i}_train.csv", index=False)
-
-    

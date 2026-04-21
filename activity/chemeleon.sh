@@ -5,7 +5,7 @@ set -euo pipefail
 mkdir -p train_output
 mkdir train_output/chemeleon
 
-for i in {0..2}; do
+for i in {0..3}; do
     chemprop train \
         --output-dir train_output/chemeleon/split_${i} \
         --logfile train_output/chemeleon/split_${i}/log.txt \
@@ -17,6 +17,7 @@ for i in {0..2}; do
         --pytorch-seed 42 \
         --smiles-columns SMILES \
         --target-columns pEC50 \
+        --weight-column pEC50_weight \
         --task-weights 10 1 1 1 \
         --task-type regression \
         --patience 3 \

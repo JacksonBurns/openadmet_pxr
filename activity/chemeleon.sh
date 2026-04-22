@@ -18,7 +18,6 @@ for i in {0..3}; do
         --smiles-columns SMILES \
         --target-columns pEC50 \
         --weight-column pEC50_weight \
-        --task-weights 10 1 1 1 \
         --task-type regression \
         --patience 3 \
         --max-lr 0.0001 \

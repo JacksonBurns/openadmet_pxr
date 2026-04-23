@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Runs Boltz with Precomputed MSA and Pocket Constraints
+# Runs Boltz with Precomputed MSA, Dynamic Templates, and Constraints
 #
 # Usage: ./boltz_inference.sh 
 
@@ -10,12 +10,13 @@ set -euo pipefail
 FASTA_PATH="PXR_protein_sequence.fasta"
 SMILES_CSV="pxr-challenge_structure_TEST_BLINDED.csv"
 OUTDIR_BASE="boltz_outputs"
-MSA_PATH="$(realpath mmseqs2_pxr.a3m)"  # Use absolute path for the MSA
+PROCESSED_TEMPLATES="processed_templates"
+RAW_TEMPLATES="raw_templates"
+MSA_PATH="$(realpath mmseqs2_pxr.a3m)"  
 
 mkdir -p "$OUTDIR_BASE"
+mkdir -p "$PROCESSED_TEMPLATES"
 
-
-# Extract the protein sequence
 PROTEIN_SEQ=$(grep -v "^>" "$FASTA_PATH" | tr -d '\n' | tr -d '\r')
 
 tail -n +2 "$SMILES_CSV" | while IFS=',' read -r ligand_id raw_smiles; do
@@ -35,9 +36,11 @@ tail -n +2 "$SMILES_CSV" | while IFS=',' read -r ligand_id raw_smiles; do
         continue
     fi
 
-    # B. Generate Boltz YAML input with Constraints and MSA
+    # B. Generate the dynamic YAML blocks (Templates and Constraints)
+    echo "Calculating optimal structural templates..."
     INPUT_YAML="${COMPLEX_OUTDIR}/${ligand_id}_input.yaml"
     
+    # 1. Write the static headers
     cat <<EOF > "$INPUT_YAML"
 version: 1
 sequences:
@@ -45,33 +48,30 @@ sequences:
       id: A
       sequence: $PROTEIN_SEQ
       msa: "$MSA_PATH"
-      templates:
-        - pdb: "$(realpath ./processed_templates/pdb9fzj_chainA.pdb)"
-        - pdb: "$(realpath ./processed_templates/pdb8r00_chainA.pdb)"
-        - pdb: "$(realpath ./processed_templates/pdb9fzj_chainA.pdb)"
-        - pdb: "$(realpath ./processed_templates/pdb7axe_chainA.pdb)"
-        - pdb: "$(realpath ./processed_templates/pdb4ny9_chainA.pdb)"
-        - pdb: "$(realpath ./processed_templates/pdb4xhd_chainA.pdb)"
   - ligand:
       id: B
       smiles: '$CLEAN_SMILES'
-# from prepare_templates_and_constraints.py
-constraints:
-  - pocket:
-      binder: B
-      contacts: [['A', 106], ['A', 144], ['A', 266]]
-      max_distance: 6.0
-      force: true
 EOF
 
+    # 2. Append the dynamic blocks directly to the YAML
+    if ! python3 dynamic_template_selector.py \
+        --query_smiles "$CLEAN_SMILES" \
+        --fasta "$FASTA_PATH" \
+        --raw_dir "$RAW_TEMPLATES" \
+        --out_dir "$PROCESSED_TEMPLATES" \
+        --chain "A" \
+        --p2rank "p2rank_2.5.1/prank" >> "$INPUT_YAML"; then
+        echo "WARNING: Dynamic template generation failed. Skipping..."
+        continue
+    fi
+
     # C. Run Boltz Prediction
-    # We can add --use_potentials to enable the physics-based refinement for the pocket constraint.
     boltz predict "$INPUT_YAML" \
         --out_dir "$COMPLEX_OUTDIR" \
         --output_format pdb \
         --method "x-ray diffraction" \
-        --diffusion_samples 20 \
-        --max_parallel_samples 20 \
+        --diffusion_samples 10 \
+        --max_parallel_samples 10 \
         --use_potentials
 
     end_time=$(date +%s)

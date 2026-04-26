@@ -70,8 +70,8 @@ EOF
         --out_dir "$COMPLEX_OUTDIR" \
         --output_format pdb \
         --method "x-ray diffraction" \
-        --diffusion_samples 10 \
-        --max_parallel_samples 10 \
+        --diffusion_samples 20 \
+        --max_parallel_samples 20 \
         --use_potentials
 
     end_time=$(date +%s)

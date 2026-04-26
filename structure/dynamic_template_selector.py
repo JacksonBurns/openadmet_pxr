@@ -183,9 +183,11 @@ def main():
         sys.exit(1)
 
     scores.sort(key=lambda x: x[0], reverse=True)
-    top_3 = [p for _, p in scores[:3]]
-    log(f"Selected Top 3 Templates by MCS Overlap:")
-    for sim, p in scores[:3]: log(f" - {p.stem} (Fraction of Fragment Matched: {sim:.3f})")
+    # TODO: change this to only include the highest matching templates and those that are tied with it (up to 3)
+    best_score = scores[0][0]
+    top_3 = [p for _, p in scores if _ == best_score][:3]
+    log(f"Selected Top {len(top_3)} Templates by MCS Overlap:")
+    for sim, p in scores[:len(top_3)]: log(f" - {p.stem} (Fraction of Ligand Matched: {sim:.3f})")
 
     target_seq = read_fasta_sequence(args.fasta)
     pocket_sets = []

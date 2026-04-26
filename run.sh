@@ -7,12 +7,9 @@
 set -euo pipefail
 
 cd activity
-conda activate chemprop_live
-./chemprop.sh
-./chemeleon.sh
-python random_forest.py
-python prepare_submission.py --output submission.csv
-# cd ../structure
-# conda activate boltz
-# ./boltz_inference.sh
-# ./prepare_submission.sh
+conda activate autogluon
+python fully_automated.py
+cd ../structure
+conda activate boltz
+./boltz_inference.sh
+./prepare_submission.sh

@@ -183,16 +183,15 @@ def main():
         sys.exit(1)
 
     scores.sort(key=lambda x: x[0], reverse=True)
-    # TODO: change this to only include the highest matching templates and those that are tied with it (up to 3)
-    best_score = scores[0][0]
-    top_3 = [p for _, p in scores if _ == best_score][:3]
-    log(f"Selected Top {len(top_3)} Templates by MCS Overlap:")
-    for sim, p in scores[:len(top_3)]: log(f" - {p.stem} (Fraction of Ligand Matched: {sim:.3f})")
+    # select up to 5 templates with highest MCS similarity, but only if they have at least 20% of the query's heavy atoms in common
+    top_templates = [p for sim, p in scores if sim >= 0.2][:(5 if len(scores) >= 5 else len(scores))]
+    log(f"Selected Top {len(top_templates)} Templates by MCS Overlap:")
+    for sim, p in scores[:len(top_templates)]: log(f" - {p.stem} (Fraction of Ligand Matched: {sim:.3f})")
 
     target_seq = read_fasta_sequence(args.fasta)
     pocket_sets = []
     
-    for pdb_file in top_3:
+    for pdb_file in top_templates:
         name = pdb_file.stem
         clean_pdb = os.path.join(args.out_dir, f"{name}_chain{args.chain}.pdb")
         p2rank_out = os.path.join(args.out_dir, f"{name}_p2rank")
@@ -238,7 +237,7 @@ def main():
     yaml_contacts = "[[" + "], [".join([f"'{args.chain}', {r}" for r in final_targets]) + "]]"
 
     print("templates:")
-    for raw_path in top_3:
+    for raw_path in top_templates:
         ext = raw_path.suffix.lower()
         file_type = "cif" if ext == ".cif" else "pdb"
         print(f"  - {file_type}: \"{os.path.abspath(raw_path)}\"")

@@ -1,7 +1,6 @@
 # activity outputs
 activity/submissions
-activity/train_output
-activity/pretrain_output
+activity/train_output*
 
 # structure outputs
 structure/submissions
@@ -10,7 +9,6 @@ structure/*.zip
 structure/p2rank_2.5.1
 structure/pxr_pocket_prediction
 structure/processed_templates/*
-structure/raw_templates/*
 !structure/processed_templates/pdb7axe_chainA.pdb
 !structure/processed_templates/pdb8r00_chainA.pdb
 !structure/processed_templates/pdb9fzj_chainA.pdb

@@ -9,7 +9,6 @@
 # https://github.com/akshatzalte/rigr/blob/e315d8ab412473afcd3a07f24c8839e9b4b93a99/notebooks/resonance_generation_and_augmentation.ipynb
 
 import pandas as pd
-from astartes.molecules import train_test_split_molecules
 from rdkit import Chem
 from rdkit.Chem.SaltRemover import SaltRemover
 from sklearn.model_selection import KFold
@@ -62,10 +61,10 @@ def clean_smiles(
 
 from rmgpy.molecule import Molecule
 
-def resonate(smiles):
+def resonate(smiles, max_structs=10):
     mol = Molecule().from_smiles(smiles)
     structs = mol.generate_resonance_structures()
-    return [s.to_smiles() for s in structs]
+    return [s.to_smiles() for s in structs[:min(max_structs, len(structs))]]
 
 def explode_and_reweight(df, smiles_col="SMILES", weight_col="pEC50_weight"):
     """explodes on resonance structures and divides weights by the number of resonance structures for each molecule, so that the total weight for each molecule is unchanged by resonance augmentation"""
@@ -74,61 +73,88 @@ def explode_and_reweight(df, smiles_col="SMILES", weight_col="pEC50_weight"):
     return exploded_df
 
 if __name__ == "__main__":
+    import argparse
     from pathlib import Path
 
     from tqdm import tqdm
 
-    test_df = pd.read_csv("test.csv")
-    test_df["SMILES"] = test_df["SMILES"].astype(object)
-    for i in tqdm(range(test_df.shape[0]), desc="Preprocessing SMILES"):
-        og_smiles = test_df.iloc[i]['SMILES']
-        try:
-            clean_smi = clean_smiles(og_smiles)
-        except Exception as e:
-            print(f"Skipping {og_smiles}, failed initial clean")
-            print(e)
-            continue
-        try:
-            resonance_smiles = resonate(clean_smi)
-            test_df.at[i, "SMILES"] = resonance_smiles
-        except Exception as e:
-            print(f"Skipping resonance generation for smiles {og_smiles}")
-            print(e)
-    test_df.explode("SMILES").to_csv("test_augmented.csv", index=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--do-test", action="store_true")
+    parser.add_argument("--do-train", action="store_true")
+    parser.add_argument("--do-train-denoised", action="store_true")
+    args = parser.parse_args()
 
-    train_df = pd.read_csv("train.csv")
-    train_df["SMILES"] = train_df["SMILES"].astype(object)
-    for i in tqdm(range(train_df.shape[0]), desc="Preprocessing SMILES"):
-        og_smiles = train_df.iloc[i]['SMILES']
-        try:
-            clean_smi = clean_smiles(og_smiles)
-        except Exception as e:
-            print(f"Skipping {og_smiles}, failed initial clean")
-            print(e)
-            continue
-        try:
-            resonance_smiles = resonate(clean_smi)
-            train_df.at[i, "SMILES"] = resonance_smiles
-        except Exception as e:
-            print(f"Skipping resonance generation for smiles {og_smiles}")
-            print(e)
-    train_df.explode("SMILES").to_csv("train_augmented.csv", index=False)
+    if args.do_test:
+        test_df = pd.read_csv("test.csv")
+        test_df["SMILES"] = test_df["SMILES"].astype(object)
+        for i in tqdm(range(test_df.shape[0]), desc="Preprocessing SMILES"):
+            og_smiles = test_df.iloc[i]['SMILES']
+            try:
+                clean_smi = clean_smiles(og_smiles)
+            except Exception as e:
+                print(f"Skipping {og_smiles}, failed initial clean")
+                print(e)
+                continue
+            try:
+                resonance_smiles = resonate(clean_smi)
+                test_df.at[i, "SMILES"] = resonance_smiles
+            except Exception as e:
+                print(f"Skipping resonance generation for smiles {og_smiles}")
+                print(e)
+        test_df.explode("SMILES").to_csv("test_augmented.csv", index=False)
 
-    outdir = Path("splits")
-    outdir.mkdir(exist_ok=True)
-    for fold_number, fold in enumerate(KFold(n_splits=5, shuffle=True, random_state=42).split(train_df)):
-        subdir = outdir / f"fold_{fold_number}"
-        subdir.mkdir(exist_ok=True)
-        explode_and_reweight(train_df.iloc[fold[1]].reset_index(drop=True)).to_csv(subdir / "test.csv", index=False)
-        subdf = train_df.iloc[fold[0]].reset_index(drop=True)
-        explode_and_reweight(subdf).to_csv(subdir / "train_val.csv", index=False)  # for models that don't need a separate validation set, they can just use this whole fold for training
-        for i in range(4):
-            subsubdir = subdir / f"split_{i}"
-            subsubdir.mkdir(exist_ok=True)
-            *_, train_idxs, val_idxs = train_test_split_molecules([s if isinstance(s, str) else s[0] for s in subdf["SMILES"].to_list()], train_size=0.80, test_size=0.20, sampler="kmeans", random_state=i + 42, return_indices=True)
-            i_train_df = subdf.iloc[train_idxs].reset_index(drop=True)
-            i_val_df = subdf.iloc[val_idxs].reset_index(drop=True)
-            i_val_df = explode_and_reweight(i_val_df)
-            i_val_df.to_csv(subsubdir / "val.csv", index=False)
-            i_train_df = explode_and_reweight(i_train_df)
-            i_train_df.to_csv(subsubdir / "train.csv", index=False)
+    if args.do_train:
+        train_df = pd.read_csv("train.csv")
+        train_df["SMILES"] = train_df["SMILES"].astype(object)
+        for i in tqdm(range(train_df.shape[0]), desc="Preprocessing SMILES"):
+            og_smiles = train_df.iloc[i]['SMILES']
+            try:
+                clean_smi = clean_smiles(og_smiles)
+            except Exception as e:
+                print(f"Skipping {og_smiles}, failed initial clean")
+                print(e)
+                continue
+            try:
+                resonance_smiles = resonate(clean_smi)
+                train_df.at[i, "SMILES"] = resonance_smiles
+            except Exception as e:
+                print(f"Skipping resonance generation for smiles {og_smiles}")
+                print(e)
+        train_df.explode("SMILES").to_csv("train_augmented.csv", index=False)
+
+        outdir = Path("splits")
+        outdir.mkdir(exist_ok=True)
+        for fold_number, fold in enumerate(KFold(n_splits=5, shuffle=True, random_state=42).split(train_df)):
+            subdir = outdir / f"fold_{fold_number}"
+            subdir.mkdir(exist_ok=True)
+            explode_and_reweight(train_df.iloc[fold[1]].reset_index(drop=True)).to_csv(subdir / "val.csv", index=False)
+            subdf = train_df.iloc[fold[0]].reset_index(drop=True)
+            explode_and_reweight(subdf).to_csv(subdir / "train.csv", index=False)
+
+    if args.do_train_denoised:
+        train_df = pd.read_csv("train_denoised.csv")
+        train_df["SMILES"] = train_df["SMILES"].astype(object)
+        for i in tqdm(range(train_df.shape[0]), desc="Preprocessing SMILES"):
+            og_smiles = train_df.iloc[i]['SMILES']
+            try:
+                clean_smi = clean_smiles(og_smiles)
+            except Exception as e:
+                print(f"Skipping {og_smiles}, failed initial clean")
+                print(e)
+                continue
+            try:
+                resonance_smiles = resonate(clean_smi)
+                train_df.at[i, "SMILES"] = resonance_smiles
+            except Exception as e:
+                print(f"Skipping resonance generation for smiles {og_smiles}")
+                print(e)
+        train_df.explode("SMILES").to_csv("train_denoised_augmented.csv", index=False)
+
+        outdir = Path("splits_denoised")
+        outdir.mkdir(exist_ok=True)
+        for fold_number, fold in enumerate(KFold(n_splits=5, shuffle=True, random_state=42).split(train_df)):
+            subdir = outdir / f"fold_{fold_number}"
+            subdir.mkdir(exist_ok=True)
+            explode_and_reweight(train_df.iloc[fold[1]].reset_index(drop=True)).to_csv(subdir / "val.csv", index=False)
+            subdf = train_df.iloc[fold[0]].reset_index(drop=True)
+            explode_and_reweight(subdf).to_csv(subdir / "train.csv", index=False)
